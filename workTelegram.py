@@ -142,7 +142,6 @@ def handle_document(message):
 #@bot.message_handler(content_types=['text'])
 
 @app.route('/<int:userID>/<string:text>')
-#def any_message(message):
 def any_message(userID,text):
     global URL_USERS
     data = request.get_json() 
