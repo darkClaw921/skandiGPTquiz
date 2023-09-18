@@ -36,15 +36,15 @@ sql = workYDB.Ydb()
 
 URL_USERS = {}
 
-# MODEL_URL= 'https://docs.google.com/document/d/1nMjBCoI3WpWofpVRI0rsi-iHjVSeC358JDwN96UWBrM/edit?usp=sharing'
-# gsText, urls_photo = sheet.get_gs_text()
-# #print(f'{urls_photo=}')
-# model_index=gpt.load_search_indexes(MODEL_URL, gsText=gsText)
-# model_project = gpt.create_embedding(gsText)
-# PROMT_URL = 'https://docs.google.com/document/d/1f4GMt2utNHsrSjqwE9tZ7R632_ceSdgK6k-_QwyioZA/edit?usp=sharing'
-# model= gpt.load_prompt(PROMT_URL)
-# PROMT_URL_SUMMARY ='https://docs.google.com/document/d/1XhSDXvzNKA9JpF3QusXtgMnpFKY8vVpT9e3ZkivPePE/edit?usp=sharing'
-# PROMT_PODBOR_HOUSE = 'https://docs.google.com/document/d/1WTS8SQ2hQSVf8q3trXoQwHuZy5Q-U0fxAof5LYmjYYc/edit?usp=sharing'
+MODEL_URL= 'https://docs.google.com/document/d/1nMjBCoI3WpWofpVRI0rsi-iHjVSeC358JDwN96UWBrM/edit?usp=sharing'
+gsText, urls_photo = sheet.get_gs_text()
+#print(f'{urls_photo=}')
+model_index=gpt.load_search_indexes(MODEL_URL, gsText=gsText)
+model_project = gpt.create_embedding(gsText)
+PROMT_URL = 'https://docs.google.com/document/d/1f4GMt2utNHsrSjqwE9tZ7R632_ceSdgK6k-_QwyioZA/edit?usp=sharing'
+model= gpt.load_prompt(PROMT_URL)
+PROMT_URL_SUMMARY ='https://docs.google.com/document/d/1XhSDXvzNKA9JpF3QusXtgMnpFKY8vVpT9e3ZkivPePE/edit?usp=sharing'
+PROMT_PODBOR_HOUSE = 'https://docs.google.com/document/d/1WTS8SQ2hQSVf8q3trXoQwHuZy5Q-U0fxAof5LYmjYYc/edit?usp=sharing'
 
 # info_db=create_info_vector()
 
@@ -141,17 +141,17 @@ def handle_document(message):
 #@logger.catch
 #@bot.message_handler(content_types=['text'])
 
-@app.route('/gpt',methods=['GET'])
+@app.route('/<int:userID>/<string:text>')
 #def any_message(message):
-def any_message():
+def any_message(userID,text):
     global URL_USERS
     data = request.get_json() 
     logger.debug(f'{data=}') 
-    return 0
+    # return 0
     #print('это сообщение', message)
     #text = message.text.lower()
-    text = message.text
-    userID= message.chat.id
+    text = text
+    userID= userID
     payload = sql.get_payload(userID)
 
     if payload == 'addmodel':
@@ -204,7 +204,7 @@ def any_message():
         
         #answer = gpt.answer_index(model, text, history, model_index,temp=0.2, verbose=1)
         answer, allToken, allTokenPrice, message_content = gpt.answer_index(model, text, history, model_index,temp=0.5, verbose=0)
-        bot.send_message(message.chat.id, answer)
+        bot.send_message(userID, answer)
         add_message_to_history(userID, 'assistant', answer)
 
         return 0 
@@ -228,7 +228,7 @@ def any_message():
     #выборка 
     #logger.info(f'{message_content=}')
         
-    bot.send_message(message.chat.id, answer,  parse_mode='markdown')
+    bot.send_message(userID, answer,  parse_mode='markdown')
     media_group = []
     photoFolder = -1
 
@@ -265,7 +265,7 @@ def any_message():
                 break
 
         if all(trueList): isSendMessage = False
-        if isSendMessage: bot.send_message(message.chat.id, 'Подождите, ищу фото проектов...',  parse_mode='markdown')
+        if isSendMessage: bot.send_message(userID, 'Подождите, ищу фото проектов...',  parse_mode='markdown')
 
         for project in matches:
             #media_group.extend(media_group1)
@@ -274,10 +274,10 @@ def any_message():
                 URL_USERS, media_group,nameProject = download_photo(url,URL_USERS,userID,)
                 if media_group == []:
                     continue
-                bot.send_message(message.chat.id, f'Отправляю фото проекта {nameProject}...',  parse_mode='markdown')
-                bot.send_media_group(message.chat.id, media_group,)
+                bot.send_message(userID, f'Отправляю фото проекта {nameProject}...',  parse_mode='markdown')
+                bot.send_media_group(userID, media_group,)
             except Exception as e:
-                bot.send_message(message.chat.id, f'Извините, не могу найти актуальные фото {project}',  parse_mode='markdown') 
+                bot.send_message(userID, f'Извините, не могу найти актуальные фото {project}',  parse_mode='markdown') 
                 logger.error(e)
         
         if media_group != []:
@@ -285,7 +285,7 @@ def any_message():
                 mes = 'Вам понравился проект?'
             else:
                 mes = 'Какой проект Вам понравился?'
-            bot.send_message(message.chat.id, mes,  parse_mode='markdown')
+            bot.send_message(userID, mes,  parse_mode='markdown')
     
     if b >= 0 or b1>=0 or b2>=0:
         print(f"{prepareAnswer.find('cпасибо за предоставленный номер')=}")
@@ -316,7 +316,7 @@ def any_message():
     row = {'all_price': float(allTokenPrice), 'all_token': int(allToken), 'all_messages': 1}
     sql.plus_query_user('user', row, f"id={userID}")
     
-    username = message.from_user.username
+    username = 'none' 
     rows = {'time_epoch': time_epoch(),
             'MODEL_DIALOG': payload,
             'date': formatted_date,
